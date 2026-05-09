@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الفيزياء: الحث والفيزياء الحديثة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .selected { background-color: #0f172a !important; color: white !important; border-color: #1e293b !important; }
+        .option-card:hover:not(:disabled) { border-color: #3b82f6; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-cyan-800 to-blue-900 p-8 text-white text-center">
+            <h1 class="text-3xl font-bold">اختبار الفيزياء المتقدم</h1>
+            <p class="mt-2 text-cyan-200">نتائجك ستُسجل تلقائياً في سجل المعلم</p>
+        </div>
+
+        <div id="main-content" class="p-8">
+            
+            <!-- الشاشة 1: إدخال الاسم -->
+            <div id="name-screen" class="text-center py-10">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">مرحباً بك في الاختبار</h2>
+                <input type="text" id="student-name" placeholder="اكتب اسمك الثلاثي هنا" 
+                    class="w-full p-4 border-2 border-slate-200 rounded-2xl mb-6 text-center outline-none focus:border-blue-500">
+                <button onclick="startQuiz()" class="w-full bg-blue-700 text-white py-4 rounded-2xl font-bold hover:bg-blue-800 transition-all">
+                    بدء الاختبار الآن
+                </button>
+            </div>
+
+            <!-- الشاشة 2: الأسئلة -->
+            <div id="quiz-screen" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <span id="progress-text" class="text-slate-500 font-bold">السؤال 1 من 12</span>
+                    <div class="w-32 bg-slate-100 rounded-full h-2">
+                        <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 8%"></div>
+                    </div>
+                </div>
+                
+                <h2 id="question-text" class="text-xl font-bold mb-8 text-slate-800 min-h-[60px] leading-relaxed"></h2>
+                
+                <div id="answer-area" class="space-y-4"></div>
+
+                <button id="next-btn" disabled class="mt-10 w-full bg-blue-700 text-white py-4 rounded-2xl font-bold hover:bg-blue-800 disabled:bg-slate-200">
+                    تأكيد وتسجيل الإجابة
+                </button>
+            </div>
+
+            <!-- الشاشة 3: النتيجة النهائية -->
+            <div id="result-screen" class="hidden text-center py-10">
+                <div class="text-6xl mb-6">✅</div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">تم إرسال إجابتك بنجاح</h2>
+                <div class="bg-slate-50 p-8 rounded-3xl mb-4 border border-slate-100">
+                    <p id="final-score" class="text-6xl font-black text-blue-700"></p>
+                    <p class="text-slate-400 mt-2">من 12 درجة</p>
+                </div>
+                <p id="final-message" class="text-lg text-slate-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. ضع رابط الـ Web App الخاص بجوجل شيت هنا
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxyuyb5E74SeCNC9IIa5tdjqLHZIYpcdtLRpKtuyrV2WFW-b7RGEFoj5sv6RJtwFTDv/exec"; 
+
+        const quizData = [
+            { type: "choice", q: "لماذا يعود مؤشر الجلفانومتر للصفر عند استقرار المغناطيس داخل الملف؟", options: ["بسبب انعدام الفيض", "لانعدام السرعة النسبية", "زيادة المقاومة", "توقف قانون لنز"], correct: 1 },
+            { type: "choice", q: "نسبة emf_x إلى emf_y في الحلقتين (X ضعف قطر Y) هي:", options: ["1:1", "1:2", "4:1", "1:4"], correct: 2 },
+            { type: "choice", q: "لتوليد emf مطابقة لسلك (v, L, B) باستخدام سلك طوله 2L، نحتاج سرعة:", options: ["0.5v", "2v", "v", "4v"], correct: 0 },
+            { type: "choice", q: "عند ابتعاد القطب الشمالي، النقطة ذات الجهد الأعلى في الدائرة الخارجية هي:", options: ["X", "a", "Y", "b"], correct: 2 },
+            { type: "choice", q: "سلك ينزلق يميناً وجهد (1) أعلى من (2)، اتجاه المجال يكون:", options: ["يساراً", "أعلى", "للداخل", "للخارج"], correct: 3 },
+            { type: "choice", q: "تقليل الريوستات في الابتدائي يؤدي لزيادة إضاءة الثانوي بمقدار:", options: ["ضعف", "ثابت", "9 أمثال", "صفر"], correct: 2 },
+            { type: "choice", q: "العلاقة بين λmax ودرجة الحرارة T حسب قانون وين هي:", options: ["طردية", "عكسية", "ثابتة", "تزايدية"], correct: 1 },
+            { type: "choice", q: "نسبة الأطوال الموجية لأجسام حرارتها 6000:5000:4000 هي:", options: ["10:12:15", "15:12:10", "6:5:4", "1:1:1"], correct: 0 },
+            { type: "choice", q: "إذا تساوت السرعة، الجسيم صاحب الطول الموجي الأكبر هو:", options: ["البروتون", "الإلكترون", "متساويان", "النيوترون"], correct: 1 },
+            { type: "essay", q: "اشرح باختصار نص قانون لنز.", keywords: ["يعاكس", "تغير", "الفيض"], correct_text: "التيار المستحث يعاكس التغير في الفيض المسبب له." },
+            { type: "essay", q: "ما تأثير مضاعفة السرعة على طول دي برولي؟", keywords: ["يقل", "نصف", "عكسية"], correct_text: "يقل للنصف للعلاقة العكسية." },
+            { type: "essay", q: "لماذا تزيد الإضاءة بزيادة تيار الابتدائي؟", keywords: ["حث", "متبادل", "زيادة"], correct_text: "بسبب الحث المتبادل وزيادة الجهد المستحث." }
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+        let studentName = "";
+        let studentAnswer = null;
+
+        function startQuiz() {
+            studentName = document.getElementById('student-name').value;
+            if(studentName.trim().length < 3) {
+                alert("برجاء إدخال الاسم كاملاً");
+                return;
+            }
+            document.getElementById('name-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const data = quizData[currentQ];
+            const area = document.getElementById('answer-area');
+            const btn = document.getElementById('next-btn');
+            
+            document.getElementById('question-text').innerText = data.q;
+            document.getElementById('progress-text').innerText = `السؤال ${currentQ + 1} من 12`;
+            document.getElementById('progress-bar').style.width = `${((currentQ + 1) / 12) * 100}%`;
+            btn.disabled = true;
+            area.innerHTML = '';
+
+            if (data.type === "choice") {
+                data.options.forEach((opt, idx) => {
+                    const b = document.createElement('button');
+                    b.className = "option-card w-full text-right p-5 border-2 border-slate-100 rounded-2xl transition-all bg-slate-50";
+                    b.innerText = opt;
+                    b.onclick = () => {
+                        studentAnswer = idx;
+                        document.querySelectorAll('.option-card').forEach(x => x.classList.remove('selected'));
+                        b.classList.add('selected');
+                        btn.disabled = false;
+                    };
+                    area.appendChild(b);
+                });
+            } else {
+                const txt = document.createElement('textarea');
+                txt.className = "w-full p-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 h-32 text-right";
+                txt.oninput = (e) => {
+                    studentAnswer = e.target.value;
+                    btn.disabled = studentAnswer.trim().length < 5;
+                };
+                area.appendChild(txt);
+            }
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            const data = quizData[currentQ];
+            if (data.type === "choice") {
+                if (studentAnswer === data.correct) score++;
+            } else {
+                let matches = 0;
+                data.keywords.forEach(word => { if (studentAnswer.includes(word)) matches++; });
+                if (matches >= 2) score++;
+            }
+
+            currentQ++;
+            if (currentQ < 12) loadQuestion();
+            else sendAndFinish();
+        };
+
+        function sendAndFinish() {
+            // إرسال البيانات فورياً لجوجل شيت
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ name: studentName, score: score })
+            });
+
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+        }
+    </script>
+</body>
+</html>
